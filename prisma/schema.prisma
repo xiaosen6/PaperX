@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Paper {
+  id           String   @id @default(cuid())
+  title        String
+  abstract     String
+  authors      String
+  publishedAt  DateTime
+  source       String   // e.g. "arxiv"
+  externalId   String   // e.g. arXiv ID
+  externalUrl  String
+  tags         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userLibraries UserLibraryOnPaper[]
+
+  @@unique([source, externalId])
+}
+
+model User {
+  id          String                 @id @default(cuid())
+  email       String                 @unique
+  displayName String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  libraries   UserLibrary[]
+}
+
+model UserLibrary {
+  id        String               @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  user   User                @relation(fields: [userId], references: [id])
+  papers UserLibraryOnPaper[]
+}
+
+model UserLibraryOnPaper {
+  libraryId String
+  paperId   String
+  addedAt   DateTime @default(now())
+
+  library UserLibrary @relation(fields: [libraryId], references: [id])
+  paper   Paper       @relation(fields: [paperId], references: [id])
+
+  @@id([libraryId, paperId])
+}
+
+model ModelProviderConfig {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  provider    String   // e.g. "openai", "azure-openai", "custom-http"
+  endpoint    String
+  apiKey      String   // stored encrypted at rest via Supabase / env-level controls
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
